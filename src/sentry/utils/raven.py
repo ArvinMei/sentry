@@ -75,7 +75,8 @@ class SentryInternalClient(DjangoClient):
         )
 
         try:
-            project = Project.objects.get_from_cache(id=settings.SENTRY_PROJECT)
+            project = Project.objects.get_from_cache(
+                id=settings.SENTRY_PROJECT, unconstrained_unsafe=True)
         except DatabaseError:
             self.error_logger.error('Unable to fetch internal project',
                                     exc_info=True)
@@ -114,7 +115,9 @@ class SentryInternalClient(DjangoClient):
             message = kwargs.get('message')
             if not message:
                 msg_interface = kwargs.get('sentry.interface.Message', {})
-                message = msg_interface.get('formatted', msg_interface.get('message', 'unknown error'))
+                message = msg_interface.get(
+                    'formatted', msg_interface.get(
+                        'message', 'unknown error'))
             self.error_logger.error(
                 'Unable to record event: %s\nEvent was: %r', e,
                 message, exc_info=True)

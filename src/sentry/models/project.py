@@ -21,8 +21,8 @@ from django.utils.translation import ugettext_lazy as _
 from sentry.app import locks
 from sentry.constants import ObjectStatus
 from sentry.db.models import (
-    BaseManager, BoundedPositiveIntegerField, FlexibleForeignKey, Model,
-    sane_repr
+    BoundedPositiveIntegerField, FlexibleForeignKey, Model,
+    OrganizationBoundManager, OrganizationBoundMixin, sane_repr
 )
 from sentry.db.models.utils import slugify_instance
 from sentry.utils.colors import get_hashed_color
@@ -34,7 +34,7 @@ from sentry.utils.retries import TimedRetryPolicy
 ProjectStatus = ObjectStatus
 
 
-class ProjectManager(BaseManager):
+class ProjectManager(OrganizationBoundManager):
     # TODO(dcramer): we might want to cache this per user
     def get_for_user(self, team, user, scope=None, _skip_team_check=False):
         from sentry.models import Team
@@ -68,7 +68,7 @@ class ProjectManager(BaseManager):
         return sorted(project_list, key=lambda x: x.name.lower())
 
 
-class Project(Model):
+class Project(OrganizationBoundMixin, Model):
     """
     Projects are permission based namespaces which generally
     are the top level entry point for all data.
@@ -168,7 +168,9 @@ class Project(Model):
 
     def is_internal_project(self):
         for value in (settings.SENTRY_FRONTEND_PROJECT, settings.SENTRY_PROJECT):
-            if six.text_type(self.id) == six.text_type(value) or six.text_type(self.slug) == six.text_type(value):
+            if six.text_type(
+                    self.id) == six.text_type(value) or six.text_type(
+                    self.slug) == six.text_type(value):
                 return True
         return False
 

@@ -69,7 +69,7 @@ class APIView(BaseView):
         if not project_id.isdigit():
             raise APIError('Invalid project_id: %r' % project_id)
         try:
-            return Project.objects.get_from_cache(id=project_id)
+            return Project.objects.get_from_cache(id=project_id, unconstrained_unsafe=True)
         except Project.DoesNotExist:
             raise APIError('Invalid project_id: %r' % project_id)
 
@@ -77,7 +77,10 @@ class APIView(BaseView):
         auth = helper.auth_from_request(request)
 
         if auth.version not in PROTOCOL_VERSIONS:
-            raise APIError('Client using unsupported server protocol version (%r)' % six.text_type(auth.version or ''))
+            raise APIError(
+                'Client using unsupported server protocol version (%r)' %
+                six.text_type(
+                    auth.version or ''))
 
         if not auth.client:
             raise APIError("Client did not send 'client' identifier")
@@ -190,7 +193,8 @@ class APIView(BaseView):
 
             # Legacy API was /api/store/ and the project ID was only available elsewhere
             if not project:
-                project = Project.objects.get_from_cache(id=key.project_id)
+                project = Project.objects.get_from_cache(
+                    id=key.project_id, unconstrained_unsafe=True)
                 helper.context.bind_project(project)
             elif key.project_id != project.id:
                 raise APIError('Two different projects were specified')
@@ -214,7 +218,8 @@ class APIView(BaseView):
                     # un-authenticated CORS checks for POST, we basially
                     # are obsoleting our need for a secret key entirely.
                     if origin is None and request.method != 'GET':
-                        raise APIForbidden('Missing required attribute in authentication header: sentry_secret')
+                        raise APIForbidden(
+                            'Missing required attribute in authentication header: sentry_secret')
 
                     if not is_valid_origin(origin, project):
                         raise APIForbidden('Missing required Origin or Referer header')
@@ -282,6 +287,7 @@ class StoreView(APIView):
        the user be authenticated, and a project_id be sent in the GET variables.
 
     """
+
     def post(self, request, **kwargs):
         try:
             data = request.body
@@ -557,7 +563,7 @@ def crossdomain_xml(request, project_id):
         return HttpResponse(status=404)
 
     try:
-        project = Project.objects.get_from_cache(id=project_id)
+        project = Project.objects.get_from_cache(id=project_id, unconstrained_unsafe=True)
     except Project.DoesNotExist:
         return HttpResponse(status=404)
 

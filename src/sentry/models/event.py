@@ -80,7 +80,7 @@ class Event(Model):
     def _get_project(self):
         from sentry.models import Project
         if not hasattr(self, '_project_cache'):
-            self._project_cache = Project.objects.get(id=self.project_id)
+            self._project_cache = Project.objects.unconstrained_unsafe().get(id=self.project_id)
         return self._project_cache
 
     project = property(_get_project, _set_project)
@@ -178,7 +178,9 @@ class Event(Model):
 
             result.append((key, value))
 
-        return OrderedDict((k, v) for k, v in sorted(result, key=lambda x: x[1].get_score(), reverse=True))
+        return OrderedDict(
+            (k, v) for k, v in sorted(
+                result, key=lambda x: x[1].get_score(), reverse=True))
 
     @memoize
     def interfaces(self):
